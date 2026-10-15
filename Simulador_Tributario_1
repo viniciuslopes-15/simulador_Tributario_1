@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Tributário · Reforma Tributária</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B0B0D; --navy2:#1D1D21; --cyan:#A6ABB5; --teal:#4A5568;
+    --amber:#8A8680; --coral:#7A2331; --green:#1F5C46; --violet:#3E4A5E;
+    --ice:#E8E9EC; --ink:#17171A; --muted:#6B6D72; --line:#DCDCDF; --light:#F2F2F4;
+    --gold-rgb:168,174,184; --shadow-rgb:10,10,12;
+    --silver-grad:linear-gradient(115deg,#6E7278 0%,#E9EAED 20%,#FFFFFF 32%,#9296A0 46%,#F4F5F6 60%,#787C84 74%,#DBDCE0 88%,#AEB1B8 100%);
+    --font-display:'Fraunces',Georgia,'Times New Roman',serif;
+    --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter','Segoe UI',Calibri,system-ui,Arial,sans-serif;background:#EAEAEC;color:var(--ink);
+       background-image:radial-gradient(1100px 700px at 15% -10%, #FAFAFB 0%, #EAEAEC 55%);
+       -webkit-font-smoothing:antialiased;padding:24px 14px;}
+  .wrap{max-width:1060px;margin:0 auto;}
+  .app{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 18px 50px rgba(var(--shadow-rgb),.22);}
+  .top{background:var(--navy);color:#fff;padding:22px 30px;position:relative;overflow:hidden;border-bottom:1px solid rgba(var(--gold-rgb),.35);}
+  .top:after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(420px 260px at 88% -20%, rgba(255,255,255,.16), transparent 70%);}
+  .top:before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background-image:linear-gradient(rgba(var(--gold-rgb),.14) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--gold-rgb),.14) 1px,transparent 1px);
+    background-size:26px 26px;mask-image:radial-gradient(ellipse 100% 100% at 70% 0%, #000 30%, transparent 75%);
+    animation:gridshift 18s linear infinite;}
+  @keyframes gridshift{from{background-position:0 0,0 0}to{background-position:52px 26px,26px 52px}}
+  .top .rings{position:absolute;right:-60px;top:-60px;width:240px;height:240px;opacity:.5;animation:spin 40s linear infinite;}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  .top .pulse{position:absolute;right:96px;top:56px;width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 0 rgba(var(--gold-rgb),.7);animation:pulse 2.2s ease-out infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(var(--gold-rgb),.55)}70%{box-shadow:0 0 0 14px rgba(var(--gold-rgb),0)}100%{box-shadow:0 0 0 0 rgba(var(--gold-rgb),0)}}
+  .metal-text{background:var(--silver-grad);background-size:220% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:metalShine 6s linear infinite;}
+  @keyframes metalShine{0%{background-position:0% 50%}100%{background-position:220% 50%}}
+  h1,.dph,.ph,.ph2,.ct,.dk,.hl .ht{font-family:var(--font-display);font-weight:600;letter-spacing:.2px;}
+  .app,.dash-overlay{position:relative;}
+  .kick{color:var(--cyan);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
+  .top h1{font-size:25px;margin-top:4px;font-weight:800;}
+  .top h1 span{background:var(--silver-grad);background-size:220% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:metalShine 6s linear infinite;}
+  .top p{color:var(--ice);font-size:13.5px;margin-top:4px;max-width:730px;}
+  .pad{padding:24px 30px 32px;}
+  .step{display:flex;align-items:center;gap:10px;margin:22px 0 12px;}
+  .step:first-child{margin-top:4px;}
+  .step .sn{width:30px;height:30px;border-radius:50%;background:var(--navy);color:var(--cyan);font-weight:800;
+            display:flex;align-items:center;justify-content:center;font-size:15px;flex:none;}
+  .step .st{font-size:16px;font-weight:800;}
+  .step .sd{font-size:12.5px;color:var(--muted);}
+  .acts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+  .act{border:1.5px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;transition:transform .15s ease-out,box-shadow .15s ease-out,border-color .15s;background:#fff;position:relative;overflow:hidden;}
+  .act:hover{border-color:var(--cyan);box-shadow:0 14px 24px -10px rgba(var(--shadow-rgb),.28),0 0 0 1px rgba(var(--gold-rgb),.25);}
+  .act.on{border-color:var(--cyan);background:#F0F1F3;box-shadow:inset 0 0 0 1.5px var(--cyan),0 0 16px rgba(var(--gold-rgb),.35);}
+  .act .an{font-size:14px;font-weight:700;}
+  .act .ad{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.3;}
+  .act .tag{display:inline-block;font-size:10px;font-weight:800;padding:1px 7px;border-radius:999px;margin-top:6px;color:#fff;}
+  .regs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  @media(max-width:560px){.regs{grid-template-columns:1fr}}
+  .reg{border:1.5px solid var(--line);border-radius:12px;padding:13px;cursor:pointer;text-align:center;transition:transform .15s ease-out,box-shadow .15s ease-out,border-color .15s;background:#fff;position:relative;overflow:hidden;}
+  .reg:hover{border-color:var(--cyan);box-shadow:0 14px 24px -10px rgba(var(--shadow-rgb),.28),0 0 0 1px rgba(var(--gold-rgb),.25);}
+  .reg.on{border-color:var(--cyan);background:#F0F1F3;box-shadow:inset 0 0 0 1.5px var(--cyan),0 0 16px rgba(var(--gold-rgb),.35);}
+  .reg .rn{font-size:15px;font-weight:800;}
+  .reg .rd{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.3;}
+  .nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:11px;}
+  .fld label{display:block;font-size:11px;font-weight:700;color:var(--navy2);margin-bottom:5px;}
+  .fld input,.fld select{width:100%;border:1.5px solid var(--line);border-radius:9px;padding:9px 10px;font-size:13.5px;font-family:inherit;color:var(--ink);background:#fff;}
+  .fld input:focus,.fld select:focus{outline:none;border-color:var(--cyan);}
+  .fld .sub{font-size:10px;color:var(--muted);margin-top:3px;}
+  .adv{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;}
+  .adv summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--cyan);}
+  .adv .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px;}
+  .adv .fld label{font-weight:600;color:var(--muted);}
+  .hl{border-radius:14px;padding:18px 20px;color:#fff;margin:22px 0 16px;background:var(--navy);position:relative;overflow:hidden;transition:box-shadow .15s;}
+  .hl:hover{box-shadow:0 18px 34px -16px rgba(var(--shadow-rgb),.5);}
+  .hl .ht{font-size:13px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.6px;}
+  .hl .hbig{display:flex;gap:26px;flex-wrap:wrap;align-items:baseline;margin-top:8px;}
+  .hl .hb{font-size:13px;color:var(--ice);}
+  .hl .hb b{display:block;font-size:26px;color:#fff;font-weight:800;line-height:1.1;}
+  .hl .hv{font-size:14px;font-weight:800;padding:6px 14px;border-radius:999px;align-self:center;}
+  .panel{border:1.5px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px;transition:transform .15s ease-out,box-shadow .15s ease-out;position:relative;overflow:hidden;}
+  .panel:hover{box-shadow:0 16px 30px -14px rgba(var(--shadow-rgb),.22);}
+  .panel .ph{font-size:14px;font-weight:800;margin-bottom:12px;}
+  .scroll{overflow-x:auto;}
+  table.cmp{width:100%;border-collapse:collapse;font-size:12.5px;min-width:640px;}
+  table.cmp th,table.cmp td{padding:9px 6px;text-align:right;border-bottom:1px solid var(--line);}
+  table.cmp th:first-child,table.cmp td:first-child{text-align:left;}
+  table.cmp thead th{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.2px;}
+  table.cmp tbody tr{transition:background .12s;}
+  table.cmp tbody tr:hover{background:#F2F3F5;}
+  table.cmp tr.best{background:#E7ECEA;}
+  table.cmp tr.best td:first-child{font-weight:800;color:#1F5C46;}
+  table.cmp td.tot{font-weight:800;color:var(--navy);font-family:var(--font-mono);}
+  table.cmp .sub{font-size:10px;color:var(--muted);font-weight:600;}
+  /* bar chart */
+  .bars{margin-top:4px;}
+  .brow{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .brow .bn{width:150px;flex:none;font-size:12.5px;font-weight:700;}
+  .brow .bn .s{display:block;font-size:10.5px;color:var(--muted);font-weight:600;}
+  .brow .bt{flex:1;height:26px;background:var(--light);border-radius:7px;overflow:hidden;}
+  .brow .bf{height:100%;border-radius:7px;display:flex;align-items:center;justify-content:flex-end;padding-right:9px;color:#fff;font-size:12px;font-weight:800;font-family:var(--font-mono);min-width:52px;transition:width .7s cubic-bezier(.16,1,.3,1);position:relative;overflow:hidden;}
+  .brow .bf:after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);background-size:200% 100%;animation:shimmer 2.4s ease-in-out infinite;}
+  @keyframes shimmer{0%{background-position:160% 0}100%{background-position:-60% 0}}
+  .calc{border:1.5px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px;background:var(--light);transition:box-shadow .15s;position:relative;overflow:hidden;}
+  .calc:hover{box-shadow:0 16px 30px -14px rgba(var(--shadow-rgb),.18);}
+  .calc .ct{font-size:13px;font-weight:800;margin-bottom:10px;}
+  .calc .line{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px dashed var(--line);}
+  .calc .line:last-child{border-bottom:0;}
+  .calc .line.tot{font-weight:800;font-size:15px;color:var(--navy);border-top:2px solid var(--navy);margin-top:2px;padding-top:9px;font-family:var(--font-mono);}
+  .calc .op{color:var(--muted);font-weight:700;}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  @media(max-width:560px){.kpis{grid-template-columns:1fr}}
+  .kpi{background:var(--light);border-radius:11px;padding:12px;transition:transform .15s ease-out,box-shadow .15s ease-out,background .15s;position:relative;overflow:hidden;}
+  .kpi:hover{background:#fff;box-shadow:0 14px 26px -12px rgba(var(--shadow-rgb),.25),0 0 0 1px rgba(var(--gold-rgb),.2);}
+  .kpi .l{font-size:11px;color:var(--muted);font-weight:700;}
+  .kpi .v{font-size:20px;font-weight:800;margin-top:3px;font-family:var(--font-mono);}
+  .kpi .s{font-size:11px;color:var(--muted);margin-top:2px;}
+  .note{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:12px;background:var(--light);border-radius:10px;padding:11px 13px;}
+  .note b{color:var(--ink);}
+  .warn{font-size:12px;color:#8a5a00;background:#FBF1DC;border-radius:10px;padding:11px 13px;margin-top:14px;line-height:1.45;}
+  .foot{margin-top:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+  .foot small{color:var(--muted);font-size:12px;}
+  .btn{appearance:none;border:0;cursor:pointer;font-weight:700;font-family:inherit;border-radius:999px;padding:11px 20px;font-size:14px;transition:transform .15s ease-out,box-shadow .15s ease-out,background .15s;position:relative;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn:active{transform:translateY(0);}
+  .btn-ghost{background:transparent;color:var(--navy);border:1.5px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--cyan);box-shadow:0 10px 20px -10px rgba(var(--shadow-rgb),.3);}
+  .btn-primary{background:linear-gradient(155deg,#232327 0%,#0B0B0D 55%,#1B1B1F 100%);color:#fff;border:1px solid rgba(var(--gold-rgb),.4);box-shadow:0 8px 20px -8px rgba(var(--shadow-rgb),.5),inset 0 1px 0 rgba(255,255,255,.12);position:relative;overflow:hidden;}
+  .btn-primary:before{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.22) 50%,transparent 70%);background-size:220% 100%;background-position:160% 0;transition:background-position .6s ease;}
+  .btn-primary:hover:before{background-position:-60% 0;}
+  .btn-primary:hover{background:linear-gradient(155deg,#2C2C31 0%,#0F0F12 55%,#232327 100%);box-shadow:0 14px 28px -10px rgba(var(--gold-rgb),.55),0 0 0 1px rgba(var(--gold-rgb),.4);}
+  .btn-primary:disabled{opacity:.45;cursor:not-allowed;background:var(--navy);transform:none;box-shadow:none;}
+  .btn-sm{padding:8px 14px;font-size:12.5px;}
+  #ctaResult{animation:ctaGlow 2.6s ease-in-out infinite;}
+  @keyframes ctaGlow{0%,100%{box-shadow:0 8px 20px -8px rgba(var(--shadow-rgb),.5)}50%{box-shadow:0 10px 26px -6px rgba(var(--gold-rgb),.65),0 0 0 4px rgba(var(--gold-rgb),.12)}}
+
+  /* tabs */
+  .tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1.5px solid var(--line);}
+  .tabbtn{appearance:none;background:none;border:0;padding:10px 6px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;font-family:inherit;transition:.12s;}
+  .tabbtn.on{color:var(--navy);border-bottom-color:var(--cyan);}
+  .tabbtn:hover{color:var(--navy);}
+  .tabpanel{display:none;}
+  .tabpanel.on{display:block;animation:fadein .18s ease;}
+  @keyframes fadein{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+  /* DRE import */
+  .dre-drop{border:2px dashed var(--line);border-radius:12px;padding:26px 16px;text-align:center;cursor:pointer;transition:.12s;background:var(--light);}
+  .dre-drop:hover,.dre-drop.drag{border-color:var(--cyan);background:#F0F1F3;}
+  .dre-drop input[type=file]{display:none;}
+  .dre-drop .di{font-size:26px;line-height:1;}
+  .dre-drop .dt{font-size:13px;font-weight:700;color:var(--navy2);margin-top:8px;}
+  .dre-drop .ds{font-size:11.5px;color:var(--muted);margin-top:3px;}
+  .dre-filename{font-size:12px;font-weight:700;color:#1F5C46;margin-top:8px;}
+  .dre-or{text-align:center;font-size:10.5px;color:var(--muted);font-weight:800;margin:14px 0;text-transform:uppercase;letter-spacing:.8px;}
+  .dre-or:before,.dre-or:after{content:'';display:inline-block;width:60px;height:1px;background:var(--line);vertical-align:middle;margin:0 10px;}
+  .dre-paste textarea{width:100%;min-height:110px;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font-family:ui-monospace,Consolas,monospace;font-size:12px;resize:vertical;color:var(--ink);}
+  .dre-paste textarea:focus{outline:none;border-color:var(--cyan);}
+  .dre-opts{display:flex;align-items:center;gap:16px;margin-top:12px;flex-wrap:wrap;}
+  .dre-opts .radios{display:flex;gap:14px;flex-wrap:wrap;}
+  .dre-opts label{font-size:12px;font-weight:600;color:var(--navy2);display:flex;align-items:center;gap:5px;cursor:pointer;}
+  .dre-status{font-size:12.5px;margin-top:12px;padding:10px 13px;border-radius:10px;display:none;line-height:1.4;}
+  .dre-status.show{display:block;}
+  .dre-status.ok{background:#E7ECEA;color:#1F5C46;}
+  .dre-status.err{background:#F5E4E1;color:#8C2A2A;}
+  .dre-preview{margin-top:16px;}
+  .dre-preview .ph2{font-size:13px;font-weight:800;margin-bottom:4px;}
+  .dre-preview .ps{font-size:11.5px;color:var(--muted);margin-bottom:10px;}
+  table.dre-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+  table.dre-tbl th,table.dre-tbl td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;}
+  table.dre-tbl thead th{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;}
+  table.dre-tbl td:nth-child(2),table.dre-tbl th:nth-child(2){text-align:right;white-space:nowrap;}
+  table.dre-tbl select{font-size:11.5px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-family:inherit;background:#fff;color:var(--ink);}
+  table.dre-tbl tr.ignored{opacity:.4;}
+  .dre-sums{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin-top:16px;}
+  .dre-sums .ds2{background:var(--light);border-radius:10px;padding:10px 11px;}
+  .dre-sums .ds2 .l{font-size:9.5px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.2px;}
+  .dre-sums .ds2 .v{font-size:15px;font-weight:800;color:var(--navy);margin-top:3px;}
+  .dre-apply-row{display:flex;justify-content:flex-end;margin-top:14px;gap:10px;flex-wrap:wrap;}
+
+  /* tooltip */
+  .tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--line);color:var(--muted);font-size:10px;font-weight:800;cursor:help;margin-left:4px;flex:none;}
+  .tip:hover .tipbox{display:block;}
+  .tipbox{display:none;position:absolute;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;font-size:11.5px;font-weight:500;line-height:1.4;padding:9px 11px;border-radius:8px;width:220px;z-index:20;box-shadow:0 8px 20px rgba(0,0,0,.2);}
+  .tipbox:after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy);}
+
+  /* floating nav */
+  .fab{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:9px;z-index:60;}
+  .fab button{width:44px;height:44px;border-radius:50%;border:0;background:var(--navy);color:#fff;font-size:18px;cursor:pointer;box-shadow:0 8px 18px rgba(var(--shadow-rgb),.35);display:flex;align-items:center;justify-content:center;}
+  .fab button:hover{background:var(--navy2);}
+  .fab button.hide{display:none;}
+
+  @media print{body{background:#fff;padding:0}.app{box-shadow:none}.noprint{display:none!important}.fab{display:none!important}}
+
+  /* ---------- DASHBOARD (outra interface) ---------- */
+  .dash-overlay{position:fixed;inset:0;background:radial-gradient(1200px 700px at 85% -10%, #242429 0%, #0A0A0C 55%),#0A0A0C;z-index:200;overflow-y:auto;display:none;font-family:inherit;animation:dashIn .25s ease;}
+  .dash-overlay:before{content:'';position:fixed;inset:0;pointer-events:none;opacity:.35;
+    background-image:linear-gradient(rgba(var(--gold-rgb),.10) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--gold-rgb),.10) 1px,transparent 1px);
+    background-size:34px 34px;mask-image:radial-gradient(ellipse 70% 60% at 50% 0%, #000 20%, transparent 75%);}
+  @keyframes dashIn{from{opacity:0}to{opacity:1}}
+  .dash-overlay.on{display:block;}
+  .dash-wrap{max-width:1080px;margin:0 auto;padding:22px 16px 60px;position:relative;}
+  .dash-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;color:#fff;margin-bottom:20px;flex-wrap:wrap;}
+  .dash-top .dk{color:var(--cyan);font-size:11.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;font-family:var(--font-mono);}
+  .dash-top h2{font-size:23px;font-weight:800;margin-top:3px;font-family:var(--font-display);}
+  .dash-top p{color:var(--ice);font-size:13px;margin-top:5px;max-width:640px;}
+  .dash-close{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.25);color:#fff;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;flex:none;transition:transform .15s ease-out,background .15s,box-shadow .15s;}
+  .dash-close:hover{background:rgba(255,255,255,.16);transform:translateY(-2px);box-shadow:0 10px 20px -10px rgba(0,0,0,.4);}
+  .dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+  @media(max-width:760px){.dash-grid{grid-template-columns:repeat(2,1fr);}}
+  .dcard{background:linear-gradient(160deg,#242429,#151517);border:1px solid #2E2E33;border-radius:14px;padding:14px 16px;position:relative;overflow:hidden;transition:transform .15s ease-out,box-shadow .15s ease-out,border-color .15s;}
+  .dcard:hover{border-color:rgba(var(--gold-rgb),.5);box-shadow:0 16px 32px -14px rgba(0,0,0,.55),0 0 22px -6px rgba(var(--gold-rgb),.35);}
+  .dcard .dl{font-size:10.5px;color:var(--ice);font-weight:800;text-transform:uppercase;letter-spacing:.4px;}
+  .dcard .dv{font-size:21px;font-weight:800;color:#fff;margin-top:6px;line-height:1.1;font-family:var(--font-mono);}
+  .dcard .ds3{font-size:11.5px;color:#A9ACB3;margin-top:4px;}
+  .dpanel{background:linear-gradient(160deg,#1F1F23,#131316);border:1px solid #2E2E33;border-radius:16px;padding:18px 20px;margin-bottom:16px;position:relative;overflow:hidden;transition:transform .15s ease-out,box-shadow .15s ease-out,border-color .15s;}
+  .dpanel:hover{border-color:rgba(var(--gold-rgb),.4);box-shadow:0 18px 36px -16px rgba(0,0,0,.55);}
+  .dpanel .dph{font-size:14px;font-weight:800;color:#fff;margin-bottom:2px;font-family:var(--font-display);}
+  .dpanel .dps{font-size:12px;color:#A9ACB3;margin-bottom:14px;}
+  .dash-2col{display:grid;grid-template-columns:1.1fr 1.4fr;gap:16px;}
+  @media(max-width:760px){.dash-2col{grid-template-columns:1fr;}}
+  .donut-legend{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+  .donut-legend .li{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#C9CCD2;}
+  .donut-legend .sw{width:10px;height:10px;border-radius:3px;flex:none;box-shadow:0 0 8px currentColor;}
+  .donut-legend .lv{margin-left:auto;font-weight:800;color:#fff;font-family:var(--font-mono);}
+  .dbars .drow{margin-bottom:12px;}
+  .dbars .drow .dn{font-size:12px;font-weight:700;color:#C9CCD2;display:flex;justify-content:space-between;margin-bottom:5px;}
+  .dbars .drow .dn b{color:#fff;font-family:var(--font-mono);}
+  .dbars .drow .dt{height:22px;background:#0A0A0C;border-radius:6px;overflow:hidden;}
+  .dbars .drow .df{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;color:#fff;font-size:11.5px;font-weight:800;font-family:var(--font-mono);transition:width .8s cubic-bezier(.16,1,.3,1);position:relative;overflow:hidden;}
+  .dbars .drow .df:after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.3) 50%,transparent 70%);background-size:200% 100%;animation:shimmer 2.4s ease-in-out infinite;}
+  .dfoot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-top:8px;}
+  .dfoot small{color:#A9ACB3;font-size:11.5px;}
+  .dash-badge{display:inline-block;font-size:11px;font-weight:800;padding:5px 12px;border-radius:999px;color:#fff;}
+  #dashDonut circle{transition:stroke-dasharray .8s cubic-bezier(.16,1,.3,1);}
+
+  /* ---------- 3D TILT ---------- */
+  .tilt{transform-style:preserve-3d;will-change:transform;transition:transform .12s ease-out;}
+  .tilt:hover{z-index:2;}
+  .tilt:after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;
+    background:radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,.5), transparent 55%);
+    transition:opacity .2s;mix-blend-mode:overlay;}
+  .tilt:hover:after{opacity:1;}
+  .act.tilt:after,.reg.tilt:after{mix-blend-mode:normal;background:radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(var(--gold-rgb),.16), transparent 60%);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="app">
+    <div class="top">
+      <svg class="rings" viewBox="0 0 240 240"><g fill="none" stroke="#2A2A2E" stroke-width="1.5">
+        <circle cx="120" cy="120" r="40"/><circle cx="120" cy="120" r="72"/>
+        <circle cx="120" cy="120" r="104"/></g><circle cx="160" cy="80" r="6" fill="#C7CCD3"/></svg>
+      <span class="pulse"></span>
+      <h1>Simulador <span>Tributário</span>: carga total hoje × na Reforma</h1>
+      <p>Consumo (IBS/CBS) + IRPJ + CSLL + CPP sobre a folha + INSS sobre o pró-labore dos sócios. Compare Simples tradicional, Simples híbrido, Lucro Presumido e Lucro Real.</p>
+    </div>
+    <div class="pad">
+
+      <div class="step"><span class="sn">1</span><div><div class="st">Escolha a sua atividade</div>
+        <div class="sd">Já aplicamos o tipo de operação, a redução de alíquota e as presunções de IRPJ/CSLL.</div></div></div>
+      <div class="acts" id="acts"></div>
+
+      <div class="step"><span class="sn">2</span><div><div class="st">Qual é o seu regime hoje?</div>
+        <div class="sd" id="regsub">Selecione a atividade acima para continuar</div></div></div>
+      <div class="regs" id="regs"></div>
+
+      <div class="step"><span class="sn">3</span><div><div class="st">Seus números mensais</div>
+        <div class="sd">Preencha manualmente ou importe direto da sua DRE. Folha e pró-labore entram para comparar os regimes de forma justa.</div></div></div>
+
+      <div class="tabs" role="tablist">
+        <button class="tabbtn on" data-tab="manual" type="button">✍️ Preencher manualmente</button>
+        <button class="tabbtn" data-tab="dre" type="button">📄 Importar da DRE</button>
+      </div>
+
+      <div class="tabpanel on" id="tab-manual">
+        <div class="nums">
+          <div class="fld"><label>Faturamento</label><input id="R" type="number"><div class="sub">receita/mês (R$)</div></div>
+          <div class="fld"><label>Compras c/ crédito</label><input id="Cc" type="number"><div class="sub">insumos c/ nota (R$)</div></div>
+          <div class="fld"><label>Folha (empregados)</label><input id="Fp" type="number"><div class="sub">salários (R$)</div></div>
+          <div class="fld"><label>Pró-labore dos sócios</label><input id="PL" type="number"><div class="sub">retirada mensal (R$)</div></div>
+          <div class="fld"><label>Outros custos</label><input id="Cs" type="number"><div class="sub">sem crédito (R$)</div></div>
+          <div class="fld"><label>Alíq. IBS+CBS<span class="tip">?<span class="tipbox">IBS (estados/municípios) + CBS (federal) substituem ICMS, ISS, PIS e COFINS. É a alíquota "cheia" do novo IVA dual, antes de eventuais reduções por atividade.</span></span></label><input id="tref" type="number" value="28" step="0.1"><div class="sub" id="redsub">cheia</div></div>
+        </div>
+        <div id="dreAppliedNote" class="note" style="display:none;margin-top:12px;">✅ Estes números foram preenchidos automaticamente a partir da DRE importada. Confira e ajuste se necessário.</div>
+      </div>
+
+      <div class="tabpanel" id="tab-dre">
+        <div class="dre-drop" id="dreDrop">
+          <div class="di">📎</div>
+          <div class="dt">Arraste a DRE aqui ou clique para escolher o arquivo</div>
+          <div class="ds">.pdf, .docx, .xlsx, .xls, .csv ou .txt, exportado do seu sistema contábil</div>
+          <div class="dre-filename" id="dreFilename"></div>
+          <input type="file" id="dreFile" accept=".xlsx,.xls,.csv,.txt,.pdf,.doc,.docx">
+        </div>
+        <div class="dre-or">ou cole o texto da DRE</div>
+        <div class="dre-paste"><textarea id="drePaste" placeholder="Cole aqui as linhas da DRE, ex:&#10;Receita Bruta de Vendas          350.000,00&#10;(-) CMV                           180.000,00&#10;Folha de Pagamento                 40.000,00&#10;Pró-labore                         12.000,00&#10;Despesas Administrativas           15.000,00"></textarea></div>
+        <div class="dre-opts">
+          <div class="radios">
+            <label><input type="radio" name="drePeriodo" value="mensal" checked> Valores mensais</label>
+            <label><input type="radio" name="drePeriodo" value="anual"> Valores anuais <span class="sub" style="font-weight:400">(divide por 12)</span></label>
+          </div>
+          <button class="btn btn-primary" id="dreRead" type="button" style="margin-left:auto">🔎 Ler DRE</button>
+        </div>
+        <div class="dre-status" id="dreStatus"></div>
+        <div class="dre-preview" id="drePreview" style="display:none">
+          <div class="ph2">Foi assim que entendemos sua DRE</div>
+          <div class="ps">Confira a classificação de cada linha. Você pode corrigir qualquer item no menu antes de aplicar.</div>
+          <div class="scroll"><table class="dre-tbl"><thead><tr><th>Linha identificada</th><th>Valor</th><th>Classificação</th></tr></thead><tbody id="dreRows"></tbody></table></div>
+          <div class="dre-sums" id="dreSums"></div>
+          <div class="dre-apply-row">
+            <button class="btn btn-ghost btn-sm" id="dreClear" type="button">Limpar e tentar de novo</button>
+            <button class="btn btn-primary" id="dreApply" type="button">✅ Aplicar à simulação</button>
+          </div>
+        </div>
+        <div class="note" style="margin-top:14px">🤖 <b>Leitura automática (beta):</b> aceitamos PDF, Word (.docx), Excel/CSV ou texto colado. Identificamos receita, custos com crédito, folha, pró-labore e outras despesas por palavras-chave contábeis usuais. Linhas de impostos (ICMS, PIS/COFINS, IRPJ, CSLL etc.) e de resultado (lucro bruto/líquido) são ignoradas de propósito: o próprio simulador recalcula a carga tributária. PDFs escaneados (imagem) não têm texto extraível. <b>Sempre revise antes de aplicar.</b></div>
+      </div>
+
+      <details class="adv">
+        <summary>Parâmetros e alíquotas (editáveis), com valores padrão conforme a legislação vigente</summary>
+        <div class="grid">
+          <div class="fld"><label>DAS efetivo do Simples (%)</label><input id="sdas" type="number" step="0.1" value="16"></div>
+          <div class="fld"><label>PIS/COFINS cumulativo (%)</label><input id="pcCum" type="number" step="0.01" value="3.65"></div>
+          <div class="fld"><label>PIS/COFINS não-cumul. (%)</label><input id="pcNao" type="number" step="0.01" value="9.25"></div>
+          <div class="fld"><label>ICMS médio (%)</label><input id="icms" type="number" step="0.1" value="18"></div>
+          <div class="fld"><label>ISS (%)</label><input id="iss" type="number" step="0.1" value="5"></div>
+          <div class="fld"><label>CPP+RAT+terceiros s/ folha (%)</label><input id="cpp" type="number" step="0.1" value="28.8"></div>
+          <div class="fld"><label>INSS patronal s/ pró-labore (%)</label><input id="patpl" type="number" step="0.1" value="20"></div>
+          <div class="fld"><label>INSS segurado sócio (%)</label><input id="segpl" type="number" step="0.1" value="11"></div>
+          <div class="fld"><label>Teto do INSS (R$)</label><input id="teto" type="number" step="0.01" value="8157.41"></div>
+          <div class="fld"><label>Presunção IRPJ (%)</label><input id="presI" type="number" step="0.1"></div>
+          <div class="fld"><label>Presunção CSLL (%)</label><input id="presC" type="number" step="0.1"></div>
+          <div class="fld"><label>Parcela de consumo no DAS que sai no híbrido (%)</label><input id="shareDAS" type="number" step="1" value="35"></div>
+          <div class="fld"><label>Prazo médio de recolhimento hoje (dias)</label><input id="prazo" type="number" step="1" value="30"></div>
+          <div class="fld"><label>Presumido: limite anual p/ majoração (R$)</label><input id="limiteMaj" type="number" step="1000" value="5000000"></div>
+          <div class="fld"><label>Presumido: majoração da base IRPJ/CSLL (%)</label><input id="majPct" type="number" step="1" value="10"></div>
+        </div>
+        <div class="note" style="margin-top:12px">IRPJ 15% + adicional 10% sobre o que exceder R$ 20.000/mês; CSLL 9%. No Simples, o DAS engloba IRPJ, CSLL, CPP, PIS/COFINS e ICMS/ISS (patronal do pró-labore incluído); resta o INSS segurado do sócio. No Lucro Real, folha, pró-labore e INSS patronal são despesas dedutíveis, por isso IRPJ/CSLL mudam entre hoje e reforma.</div>
+      </details>
+
+      <details class="adv">
+        <summary>Metodologia e premissas do cálculo (para validação)</summary>
+        <div class="note" style="margin-top:12px">
+          <b>Premissa central:</b> o faturamento (R) é mantido constante entre hoje e reforma.<br><br>
+          <b>Consumo hoje:</b> Presumido = PIS/COFINS cumulativo 3,65% + ICMS s/ valor agregado (comércio/indústria) ou ISS 5% (serviços). Lucro Real = PIS/COFINS não-cumulativo 9,25% (com crédito) + ICMS/ISS.<br>
+          <b>Consumo na reforma:</b> IBS/CBS = alíquota efetiva × (faturamento − compras com crédito), ou seja, débito na venda menos crédito das compras (não cumulatividade plena).<br><br>
+          <b>IRPJ/CSLL no Presumido:</b> base = presunção legal (serviços 32%/32%; comércio e indústria 8%/12%), com majoração de 10% na base acima de R$ 5 mi/ano. Não muda com a reforma (independe do consumo).<br>
+          <b>IRPJ/CSLL no Lucro Real:</b> incidem sobre o lucro apurado. <u>Hoje</u> os tributos sobre consumo ("por dentro") reduzem a receita e, portanto, a base. <u>Na reforma</u> o IBS/CBS é "por fora" (não é receita nem despesa) e não reduz o lucro. Consequência: mantido o faturamento, o lucro real (e o IRPJ/CSLL) tende a ser maior na reforma.<br><br>
+          <b>Folha:</b> CPP + RAT + terceiros 28,8% sobre a folha de empregados. <b>Pró-labore:</b> INSS patronal 20% (Presumido/Real) + segurado 11% limitado ao teto. No Simples, IRPJ, CSLL, CPP e o patronal do pró-labore já estão no DAS, soma-se apenas o segurado.<br>
+          <b>Simples híbrido:</b> aproximação que retira do DAS a parcela estimada de consumo e recolhe o IBS/CBS por fora (crédito pleno ao cliente).
+        </div>
+      </details>
+
+      <div id="result"></div>
+
+      <div class="warn">⚠️ Modelo didático. Alíquotas de referência/estatutárias, todas editáveis (IVA dual ~26,5%; aqui 28% como cenário conservador; teto do INSS ajustável). Não considera regimes monofásicos, substituição tributária, benefícios estaduais nem o Anexo IV do Simples. O "Simples híbrido" é uma aproximação da opção de recolher IBS/CBS por fora. Não substitui a apuração do contador.</div>
+
+      <div class="foot noprint">
+        <small>Ferramenta de apoio do curso <b>A Virada da Reforma</b> · Eulane Porto</small>
+        <button class="btn btn-primary" id="ctaResult" type="button">📊 Ver resultado</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="fab noprint">
+  <button id="fabResult" title="Ir para o resultado">📊</button>
+  <button id="fabTop" title="Voltar ao topo" class="hide">↑</button>
+</div>
+
+<div class="dash-overlay noprint" id="dashOverlay">
+  <div class="dash-wrap">
+    <div class="dash-top">
+      <div>
+        <div class="dk" id="dashKick">Dashboard · resultado da sua carga tributária</div>
+        <h2 id="dashTitle" class="metal-text">Simulador Tributário</h2>
+        <p id="dashSub">Visão gráfica da sua carga tributária hoje e na reforma.</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="dash-close" id="dashPrint" type="button">🖨️ Imprimir</button>
+        <button class="dash-close" id="dashClose" type="button">✕ Fechar e voltar</button>
+      </div>
+    </div>
+
+    <div class="dash-grid" id="dashKpis"></div>
+
+    <div class="dash-2col">
+      <div class="dpanel tilt">
+        <div class="dph">Composição do faturamento</div>
+        <div class="dps">De onde vem cada real do seu faturamento</div>
+        <svg id="dashDonut" viewBox="0 0 200 200" style="width:100%;max-width:220px;display:block;margin:0 auto;"></svg>
+        <div class="donut-legend" id="dashLegend"></div>
+      </div>
+      <div class="dpanel tilt">
+        <div class="dph">Carga tributária por regime, na reforma</div>
+        <div class="dps">Quanto cada regime pagaria por mês com os seus números</div>
+        <div class="dbars" id="dashBars"></div>
+      </div>
+    </div>
+
+    <div class="dpanel tilt">
+      <div class="dph">Hoje × depois da reforma, no seu regime atual</div>
+      <div class="dps" id="dashCompareSub">Comparação da carga total mensal</div>
+      <div class="dbars" id="dashCompare"></div>
+      <div class="dfoot">
+        <small id="dashNote"></small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const BRL = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  const f = v => BRL.format(Math.round(v));
+  const pc = v => v.toFixed(1).replace('.',',')+'%';
+
+  const ACTS = [
+    {id:'contador', n:'Contador', d:'Contabilidade', op:'serv', red:0.7, pub:'b2b', R:30000, Cc:4000, Fp:8000, PL:5000, Cs:4000, sdas:16},
+    {id:'adv', n:'Advogado', d:'Advocacia', op:'serv', red:0.7, pub:'b2b', R:40000, Cc:5000, Fp:12000, PL:8000, Cs:6000, sdas:16},
+    {id:'eng', n:'Engenheiro / Arquiteto', d:'Projetos', op:'serv', red:0.7, pub:'b2b', R:50000, Cc:8000, Fp:14000, PL:10000, Cs:8000, sdas:16},
+    {id:'med', n:'Médico / Clínica', d:'Saúde', op:'serv', red:0.4, pub:'b2c', R:150000, Cc:25000, Fp:60000, PL:15000, Cs:10000, sdas:16},
+    {id:'escola', n:'Escola / Curso', d:'Educação', op:'serv', red:0.4, pub:'b2c', R:200000, Cc:40000, Fp:90000, PL:15000, Cs:20000, sdas:16},
+    {id:'consult', n:'Consultoria / Agência', d:'Serviços', op:'serv', red:1, pub:'b2b', R:100000, Cc:20000, Fp:35000, PL:12000, Cs:15000, sdas:15.5},
+    {id:'tech', n:'Tecnologia / Software', d:'TI e SaaS', op:'serv', red:1, pub:'b2b', R:150000, Cc:30000, Fp:60000, PL:15000, Cs:15000, sdas:15.5},
+    {id:'loja', n:'Loja / Varejo', d:'Comércio', op:'com', red:1, pub:'b2c', R:300000, Cc:180000, Fp:40000, PL:12000, Cs:30000, sdas:10.5},
+    {id:'ecom', n:'E-commerce', d:'Loja online', op:'com', red:1, pub:'b2c', R:250000, Cc:150000, Fp:30000, PL:12000, Cs:30000, sdas:10.5},
+    {id:'atacado', n:'Atacado / Distribuidora', d:'B2B', op:'com', red:1, pub:'b2b', R:800000, Cc:560000, Fp:80000, PL:20000, Cs:70000, sdas:10},
+    {id:'industria', n:'Indústria / Fábrica', d:'Produção', op:'com', red:1, pub:'b2b', R:500000, Cc:300000, Fp:120000, PL:20000, Cs:30000, sdas:11},
+    {id:'rest', n:'Restaurante / Bar', d:'Alimentação', op:'com', red:1, pub:'b2c', R:80000, Cc:32000, Fp:20000, PL:8000, Cs:12000, sdas:10.5},
+    {id:'agro', n:'Produtor rural / Agro', d:'Grãos, pecuária, insumos', op:'com', red:0.4, pub:'b2b', R:400000, Cc:220000, Fp:60000, PL:15000, Cs:40000, sdas:8},
+    {id:'agroind', n:'Agroindústria', d:'Processados do agro', op:'com', red:1, pub:'b2b', R:600000, Cc:360000, Fp:110000, PL:20000, Cs:50000, sdas:11},
+    {id:'cesta', n:'Cesta básica (in natura)', d:'Arroz, feijão, leite, carnes', op:'com', red:0, pub:'b2c', R:250000, Cc:170000, Fp:35000, PL:12000, Cs:25000, sdas:4},
+  ];
+  const REGS = [
+    {id:'simples', n:'Simples Nacional', d:'Guia única (DAS)'},
+    {id:'presumido', n:'Lucro Presumido', d:'Presunção de lucro'},
+    {id:'real', n:'Lucro Real', d:'Lucro apurado'},
+  ];
+  const redName = r => r===0?'zero (cesta básica in natura)':r===0.7?'−30% (profissão intelectual)':r===0.4?'−60% (setor essencial: saúde, educação, agro)':'cheia';
+  const redTag  = r => r===1?'Alíquota cheia':(r===0?'Alíquota zero':(r===0.7?'Redução 30%':'Redução 60%'));
+  const redColor= r => r===1?'var(--navy2)':'var(--green)';
+  const presDefault = op => op==='serv' ? {i:32, c:32} : {i:8, c:12};
+
+  let act = ACTS[0];
+  let regime = 'presumido';
+  let lastCompute = null;
+  let dataSource = 'manual';
+
+  const irpj = b => 0.15*Math.max(0,b) + 0.10*Math.max(0, Math.max(0,b)-20000);
+  const csll = b => 0.09*Math.max(0,b);
+
+  function renderActs(){
+    $('acts').innerHTML = ACTS.map(a=>(
+      '<div class="act tilt'+(a.id===act.id?' on':'')+'" data-id="'+a.id+'"><div class="an">'+a.n+'</div>'+
+      '<div class="ad">'+a.d+'</div><span class="tag" style="background:'+redColor(a.red)+'">'+redTag(a.red)+'</span></div>'
+    )).join('');
+    $('acts').querySelectorAll('.act').forEach(el=>el.onclick=()=>{ act=ACTS.find(x=>x.id===el.dataset.id);
+      fillActivity(); renderActs(); compute(); });
+  }
+  function renderRegs(){
+    $('regs').innerHTML = REGS.map(r=>(
+      '<div class="reg tilt'+(r.id===regime?' on':'')+'" data-id="'+r.id+'"><div class="rn">'+r.n+'</div><div class="rd">'+r.d+'</div></div>'
+    )).join('');
+    $('regs').querySelectorAll('.reg').forEach(el=>el.onclick=()=>{ regime=el.dataset.id; renderRegs(); compute(); });
+  }
+  function fillActivity(){
+    $('R').value=act.R; $('Cc').value=act.Cc; $('Fp').value=act.Fp; $('PL').value=act.PL; $('Cs').value=act.Cs; $('sdas').value=act.sdas;
+    const p=presDefault(act.op); $('presI').value=p.i; $('presC').value=p.c;
+  }
+  const num = id => parseFloat($(id).value)||0;
+
+  function engine(){
+    const op=act.op, R=num('R'), Cc=num('Cc'), Fp=num('Fp'), PL=num('PL'), Cs=num('Cs');
+    const tRef=(num('tref')/100)*act.red;
+    const pcCum=num('pcCum')/100, pcNao=num('pcNao')/100, icms=num('icms')/100, iss=num('iss')/100;
+    const cppR=num('cpp')/100, patR=num('patpl')/100, segR=num('segpl')/100, teto=num('teto');
+    const presI=num('presI')/100, presC=num('presC')/100, shareDAS=num('shareDAS')/100, sDAS=num('sdas')/100;
+
+    const consRef=Math.max(0, tRef*(R-Cc));
+    const cppFolha=Fp*cppR;
+    const seg = segR*Math.min(PL, teto);     // INSS segurado do sócio (com teto)
+    const patPL = patR*PL;                    // INSS patronal sobre pró-labore
+    const inssReg = seg + patPL;              // Presumido/Real
+    const inssSimples = seg;                  // Simples: patronal está no DAS
+
+    const consPresH = op==='serv' ? R*pcCum + R*iss : R*pcCum + (R-Cc)*icms;
+    const consRealH = op==='serv' ? (R-Cc)*pcNao + R*iss : (R-Cc)*pcNao + (R-Cc)*icms;
+
+    // PRESUMIDO (majoração de 10% na base IRPJ/CSLL acima do limite anual)
+    const limiteMaj=num('limiteMaj'), majPct=num('majPct')/100;
+    const majAtiva = (R*12) > limiteMaj;
+    const majFactor = majAtiva ? (1+majPct) : 1;
+    const preI=irpj(presI*R*majFactor), preC=csll(presC*R*majFactor);
+    const pres = {
+      hoje:{cons:consPresH, irpj:preI, csll:preC, cpp:cppFolha, inss:inssReg},
+      ref: {cons:consRef,   irpj:preI, csll:preC, cpp:cppFolha, inss:inssReg}
+    };
+    // REAL: IRPJ/CSLL sobre o lucro apurado.
+    // HOJE: os tributos sobre consumo ("por dentro") reduzem a receita → reduzem a base.
+    // REFORMA: o IBS/CBS é "por fora" (não é receita nem despesa) → não reduz o lucro.
+    const luH = R - consRealH - Cc - Fp - Cs - PL - cppFolha - patPL;
+    const luR = R - Cc - Fp - Cs - PL - cppFolha - patPL;
+    const real = {
+      hoje:{cons:consRealH, irpj:irpj(luH), csll:csll(luH), cpp:cppFolha, inss:inssReg},
+      ref: {cons:consRef,   irpj:irpj(luR), csll:csll(luR), cpp:cppFolha, inss:inssReg}
+    };
+    const tot = o => o.cons+o.irpj+o.csll+o.cpp+o.inss;
+    pres.hoje.tot=tot(pres.hoje); pres.ref.tot=tot(pres.ref);
+    real.hoje.tot=tot(real.hoje); real.ref.tot=tot(real.ref);
+
+    const das=sDAS*R;
+    const simTrad={cons:'DAS', irpj:'DAS', csll:'DAS', cpp:'DAS', inss:inssSimples, das, tot:das+inssSimples, creditoCliente:0.20*consRef};
+    const simHib ={cons:consRef, irpj:'DAS', csll:'DAS', cpp:'DAS', inss:inssSimples, tot:das*(1-shareDAS)+consRef+inssSimples, creditoCliente:tRef*R};
+
+    return {op,R,Cc,Fp,PL,Cs,tRef,seg,patPL,inssSimples,consRef,cppFolha,luH,luR,majAtiva,majPct,pres,real,simTrad,simHib};
+  }
+
+  function compute(){
+    const e=engine();
+    $('regsub').textContent='Atividade: '+act.n+' · '+(e.op==='serv'?'serviços':'comércio/indústria')+
+      ' · IBS/CBS '+redName(act.red)+' → '+pc(e.tRef*100)+' efetiva';
+    $('redsub').textContent = act.red===1?'cheia → '+pc(e.tRef*100) : (act.red===0?'alíquota zero':'com redução → '+pc(e.tRef*100));
+
+    const rows=[
+      {id:'simples', n:'Simples tradicional', o:e.simTrad, extra:'DAS único · crédito limitado ao cliente'},
+      {id:'hibrido', n:'Simples híbrido', o:e.simHib, extra:'IBS/CBS por fora · crédito pleno ao cliente'},
+      {id:'presumido', n:'Lucro Presumido', o:e.pres.ref, extra:'IBS/CBS por débito-crédito'},
+      {id:'real', n:'Lucro Real', o:e.real.ref, extra:'IRPJ/CSLL sobre o lucro'},
+    ];
+    const best=rows.reduce((m,r)=>r.o.tot<m.o.tot?r:m, rows[0]);
+
+    const hojeTot = regime==='simples'? e.simTrad.tot : (regime==='presumido'? e.pres.hoje.tot : e.real.hoje.tot);
+    const refSame = regime==='simples'? e.simTrad.tot : (regime==='presumido'? e.pres.ref.tot : e.real.ref.tot);
+    const dSame=refSame-hojeTot, dColor=dSame>0?'var(--coral)':'var(--green)';
+
+    lastCompute = {e, rows, best, hojeTot, refSame, dSame};
+
+    let html='';
+    html += '<div class="hl tilt"><div class="ht">Carga total · '+act.n+' · seu regime hoje: '+REGS.find(r=>r.id===regime).n+'</div>'+
+      '<div class="hbig"><div class="hb">Hoje<b>'+f(hojeTot)+'</b>'+pc(hojeTot/e.R*100)+' da receita</div>'+
+      '<div class="hb">Mesmo regime, na reforma<b>'+f(refSame)+'</b>'+pc(refSame/e.R*100)+' da receita</div>'+
+      '<div class="hv" style="background:'+dColor+';color:#fff">'+(dSame>0?'+':'')+f(dSame)+'/mês</div></div></div>';
+
+    // TABELA
+    const cellDAS='<span class="sub">no DAS</span>';
+    html += '<div class="panel tilt"><div class="ph">Carga total na reforma: decomposição por tributo</div><div class="scroll">'+
+      '<table class="cmp"><thead><tr><th>Regime</th><th>Consumo<br>IBS/CBS</th><th>IRPJ</th><th>CSLL</th><th>CPP<br>folha</th><th>INSS<br>pró-labore</th><th>TOTAL/mês</th><th>% rec.</th></tr></thead><tbody>';
+    rows.forEach(r=>{
+      const o=r.o, isBest=r.id===best.id;
+      const c = v => v==='DAS'? cellDAS : f(v);
+      html += '<tr class="'+(isBest?'best':'')+'"><td>'+r.n+(isBest?' ✓':'')+'<div class="sub">'+r.extra+'</div></td>'+
+        '<td>'+c(o.cons)+'</td><td>'+c(o.irpj)+'</td><td>'+c(o.csll)+'</td><td>'+c(o.cpp)+'</td><td>'+f(o.inss)+'</td>'+
+        '<td class="tot">'+f(o.tot)+'</td><td>'+pc(o.tot/e.R*100)+'</td></tr>';
+    });
+    html += '</tbody></table></div>'+
+      '<div class="note"><b>Menor carga total: '+best.n+'</b> ('+f(best.o.tot)+'/mês · '+pc(best.o.tot/e.R*100)+'). '+
+      'No Simples o DAS engloba IRPJ, CSLL, CPP e o patronal do pró-labore; fica de fora o INSS segurado do sócio ('+f(e.seg)+'). '+
+      'No híbrido o cliente recebe crédito pleno ('+f(e.simHib.creditoCliente)+').</div></div>';
+
+    // GRAFICO DE BARRAS
+    const barItems=[
+      {n:'Hoje ('+REGS.find(r=>r.id===regime).n+')', v:hojeTot, c:'var(--amber)'},
+      {n:'Simples tradicional', v:e.simTrad.tot, c:'var(--navy2)'},
+      {n:'Simples híbrido', v:e.simHib.tot, c:'var(--navy2)'},
+      {n:'Lucro Presumido', v:e.pres.ref.tot, c:'var(--navy2)'},
+      {n:'Lucro Real', v:e.real.ref.tot, c:'var(--navy2)'},
+    ];
+    const maxV=Math.max.apply(null, barItems.map(b=>b.v));
+    let bhtml='';
+    barItems.forEach(b=>{
+      const isBestBar = Math.abs(b.v-best.o.tot)<1 && b.n!=='Hoje ('+REGS.find(r=>r.id===regime).n+')';
+      const col=isBestBar?'var(--green)':b.c;
+      const w=Math.max(9, b.v/maxV*100);
+      bhtml += '<div class="brow"><div class="bn">'+b.n+'<span class="s">'+pc(b.v/e.R*100)+' da receita</span></div>'+
+        '<div class="bt"><div class="bf" style="width:'+w+'%;background:'+col+'">'+f(b.v)+'</div></div></div>';
+    });
+    html += '<div class="panel tilt"><div class="ph">Comparação gráfica: carga total mensal</div><div class="bars">'+bhtml+'</div>'+
+      '<div class="note">Barra âmbar = sua situação hoje. Barras azuis = opções na reforma; verde = menor carga própria. Lembre: menor imposto próprio nem sempre é a melhor decisão se o cliente precisa de crédito (B2B).</div></div>';
+
+    // BREAKDOWN
+    html += '<div class="calc tilt"><div class="ct">Como se forma a carga total no seu regime, na reforma</div>';
+    if(regime==='simples'){
+      html += line('DAS único (IRPJ + CSLL + CPP + IBS/CBS)', pc(num('sdas'))+' × '+f(e.R));
+      html += line('(+) INSS segurado do sócio', f(e.seg), true);
+      html += line('(=) Carga total no Simples', f(e.simTrad.tot), false, true);
+      html += '</div><div class="note">No Simples a mecânica quase não muda. Avalie o <b>Simples híbrido</b> ('+f(e.simHib.tot)+'/mês) se seus clientes são empresas e precisam do crédito de '+f(e.simHib.creditoCliente)+'.</div>';
+    } else {
+      const rr = regime==='presumido'? e.pres.ref : e.real.ref;
+      html += line('Débito IBS/CBS na venda: '+pc(e.tRef*100)+' × '+f(e.R)+' (faturamento)', f(e.R*e.tRef));
+      html += line('(−) Crédito das compras: '+pc(e.tRef*100)+' × '+f(e.Cc), '− '+f(e.Cc*e.tRef), true);
+      html += line('(=) IBS/CBS a PAGAR (líquido)', f(rr.cons), true);
+      if(regime==='presumido'){
+        const majTxt = e.majAtiva ? ' × majoração '+(1+e.majPct).toFixed(2).replace('.',',') : '';
+        html += line('(+) IRPJ: 15% × (presunção '+pc(num('presI'))+' × faturamento'+majTxt+')'+(num('presI')/100*e.R*(e.majAtiva?1+e.majPct:1)>20000?' + adic. 10%':''), f(rr.irpj), true);
+        html += line('(+) CSLL: 9% × (presunção '+pc(num('presC'))+' × faturamento'+majTxt+')', f(rr.csll), true);
+        if(e.majAtiva) html += line('↳ majoração aplicada: receita anual acima de '+f(num('limiteMaj')), '+'+pc(e.majPct*100), true);
+      } else {
+        html += line('Lucro real na reforma (base): fat. − compras − folha − pró-labore − CPP − INSS patronal', f(e.luR));
+        html += line('(+) IRPJ: 15% × lucro'+(e.luR>20000?' + adic. 10% s/ excedente de R$ 20.000':''), f(rr.irpj), true);
+        html += line('(+) CSLL: 9% × lucro', f(rr.csll), true);
+      }
+      html += line('(+) CPP sobre a folha: '+pc(num('cpp'))+' × '+f(e.Fp), f(rr.cpp), true);
+      html += line('(+) INSS pró-labore: patronal '+f(e.patPL)+' + segurado '+f(e.seg), f(rr.inss), true);
+      html += line('(=) Carga tributária total', f(rr.tot), false, true);
+      let noteReal = regime==='real'
+        ? ' No <b>Lucro Real</b>, hoje os tributos sobre consumo ("por dentro") reduzem a base (lucro hoje '+f(e.luH)+(e.luH<=0?', sem lucro, logo sem IRPJ/CSLL':'')+'); na reforma o IBS/CBS é "por fora" e não reduz o lucro (base '+f(e.luR)+'). Mantido o faturamento, o lucro tributável e o IRPJ/CSLL tendem a subir.'
+        : ' No <b>Lucro Presumido</b>, IRPJ/CSLL incidem sobre a presunção legal do faturamento (independem do consumo), então não mudam com a reforma.';
+      html += '</div><div class="note">O IBS/CBS funciona por <b>débito e crédito</b>: você destaca '+f(e.R*e.tRef)+' na nota (crédito do seu cliente), abate '+f(e.Cc*e.tRef)+' das compras e <b>recolhe a diferença</b> de '+f(rr.cons)+': incidência sobre o <b>valor agregado</b>.'+noteReal+'</div>';
+    }
+
+    // LUCRO LIQUIDO
+    const llHoje=e.R-e.Cc-e.Fp-e.PL-e.Cs-hojeTot;
+    const llRef =e.R-e.Cc-e.Fp-e.PL-e.Cs-refSame;
+    const llBest=e.R-e.Cc-e.Fp-e.PL-e.Cs-best.o.tot;
+    html += '<div class="panel tilt"><div class="ph">Lucro líquido mensal, depois de todos os tributos</div><div class="kpis">'+
+      kpi('HOJE ('+REGS.find(r=>r.id===regime).n+')', f(llHoje), 'margem líquida '+pc(llHoje/e.R*100)) +
+      kpi('REFORMA (mesmo regime)', f(llRef), 'margem '+pc(llRef/e.R*100), llRef<llHoje?'var(--coral)':'var(--green)') +
+      kpi('REFORMA (melhor: '+best.n+')', f(llBest), 'margem '+pc(llBest/e.R*100), 'var(--green)') +
+      '</div>';
+    const nm=(act.pub==='b2b')
+      ? '<b>Clientes B2B:</b> creditam o IBS/CBS, migrar para um regime que gera crédito pleno pode ser um diferencial comercial, mesmo pagando um pouco mais de imposto próprio.'
+      : '<b>Clientes B2C:</b> o consumidor não usa crédito, então o menor imposto próprio (muitas vezes o Simples) tende a preservar melhor a sua margem.';
+    html += '<div class="note">'+nm+'</div></div>';
+
+    // SPLIT PAYMENT
+    const prazoDias=num('prazo');
+    const debitoVenda=e.R*e.tRef;             // IBS/CBS destacado na venda (retido no ato)
+    const impLiq=e.consRef;                   // imposto líquido após crédito
+    const splitAtivo = regime!=='simples';    // Simples tradicional recolhe via DAS mensal, sem split por transação
+    const floatMes = splitAtivo ? impLiq*(prazoDias/30) : 0;  // capital de giro que deixa de "boiar"
+    const recebMil = 1000*(1-e.tRef);
+    html += '<div class="panel tilt"><div class="ph">Split Payment: impacto no caixa</div>';
+    if(splitAtivo){
+      html += '<div class="kpis">'+
+        kpi('DE CADA R$ 1.000 VENDIDOS', f(recebMil), 'você recebe na hora') +
+        kpi('SEPARADO P/ O FISCO NO ATO', f(1000*e.tRef), 'IBS/CBS destacado na venda') +
+        kpi('CAPITAL DE GIRO QUE DEIXA DE "BOIAR"', f(floatMes), '≈ '+prazoDias+' dias de imposto líquido') +
+        '</div>'+
+        '<div class="note">Com o <b>Split Payment</b>, o IBS/CBS é retido automaticamente no pagamento (cartão, PIX, boleto). Você deixa de receber o valor cheio e recolher depois, some o "float" de cerca de <b>'+f(floatMes)+'</b> que hoje financia seu capital de giro. '+
+        'Débito na venda: '+f(debitoVenda)+'/mês; crédito das compras: '+f(e.Cc*e.tRef)+'/mês; líquido ao fisco: '+f(impLiq)+'/mês. Planeje antecipação de recebíveis ou linha de giro.</div>';
+    } else {
+      html += '<div class="kpis">'+
+        kpi('RETENÇÃO POR TRANSAÇÃO', 'Não se aplica', 'Simples recolhe via DAS mensal') +
+        kpi('IMPACTO NO CAPITAL DE GIRO', f(0), 'sem "float" perdido por venda') +
+        kpi('SE MIGRAR P/ HÍBRIDO/REGULAR', f(impLiq*(prazoDias/30)), 'giro que passaria a sair no ato') +
+        '</div>'+
+        '<div class="note">O <b>Simples tradicional</b> continua recolhendo pelo DAS mensal e <b>não sofre a retenção por transação</b> do Split Payment. Isso é uma vantagem de caixa a considerar antes de migrar para o híbrido ou o regime regular, onde o giro de ~'+f(impLiq*(prazoDias/30))+' passaria a sair no ato da venda.</div>';
+    }
+    html += '</div>';
+
+    $('result').innerHTML=html;
+  }
+
+  const line=(label,val,op,tot)=>'<div class="line'+(tot?' tot':'')+'"><span class="'+(op?'op':'')+'">'+label+'</span><span>'+val+'</span></div>';
+  const kpi=(l,v,s,color)=>'<div class="kpi tilt"><div class="l">'+l+'</div><div class="v"'+(color?' style="color:'+color+'"':'')+'>'+v+'</div><div class="s">'+s+'</div></div>';
+
+  ['R','Cc','Fp','PL','Cs','tref','sdas','pcCum','pcNao','icms','iss','cpp','patpl','segpl','teto','presI','presC','shareDAS','prazo','limiteMaj','majPct']
+    .forEach(id=>$(id).addEventListener('input', compute));
+  ['R','Cc','Fp','PL','Cs'].forEach(id=>$(id).addEventListener('input', ()=>{ dataSource='manual'; }));
+  fillActivity(); renderActs(); renderRegs(); compute();
+
+  /* ---------- ABAS: manual × importar DRE ---------- */
+  document.querySelectorAll('.tabbtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('on'));
+      document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('on'));
+      btn.classList.add('on');
+      $('tab-'+btn.dataset.tab).classList.add('on');
+    });
+  });
+
+  /* ---------- BOTÕES FLUTUANTES ---------- */
+  $('fabResult').addEventListener('click', ()=> $('result').scrollIntoView({behavior:'smooth', block:'start'}));
+  $('fabTop').addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
+  window.addEventListener('scroll', ()=>{
+    $('fabTop').classList.toggle('hide', window.scrollY < 400);
+  });
+
+  /* ---------- IMPORTAÇÃO DE DRE ---------- */
+  const norm = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+
+  const CATS = {
+    R:  {label:'Receita / Faturamento', kw:['receita bruta','receita operacional bruta','faturamento','receita de vendas','vendas brutas','receita bruta de vendas','receita bruta de servicos','receita bruta de servico','receita total']},
+    CC: {label:'Compras c/ crédito', kw:['cmv','custo da mercadoria vendida','custo das mercadorias vendidas','cpv','custo do produto vendido','custo dos produtos vendidos','csp','custo do servico prestado','custo dos servicos prestados','compras de mercadorias','compra de mercadorias','materia prima','materia-prima','insumos']},
+    FP: {label:'Folha (empregados)', kw:['folha de pagamento','salarios','salario','encargos sociais','despesas com pessoal','despesas de pessoal','ordenados','13o salario','decimo terceiro','ferias','fgts']},
+    PL: {label:'Pró-labore dos sócios', kw:['pro-labore','pro labore','prolabore','retirada de socios','retirada dos socios','remuneracao dos socios','remuneracao de socios']},
+    CS: {label:'Outros custos', kw:['despesas administrativas','despesas gerais','despesas operacionais','despesas com vendas','despesas comerciais','aluguel','despesas com marketing','despesas diversas','outras despesas','despesas financeiras','despesas de ocupacao','manutencao','material de escritorio','honorarios','telefone','energia eletrica','depreciacao','despesas gerais e administrativas']},
+    IGNORE: {label:'Ignorar (tributo/resultado)', kw:['icms','pis ','pis/cofins','cofins','iss ','irpj','csll','ir sobre','contribuicao social','deducoes','impostos sobre venda','imposto sobre venda','lucro bruto','lucro liquido','lucro operacional','resultado bruto','resultado liquido','resultado operacional','resultado antes','ebitda','receita liquida','despesas tributarias','simples nacional','das (','demonstracao do resultado','dre ']}
+  };
+  const CAT_ORDER = ['IGNORE','R','CC','PL','FP','CS'];
+
+  function classify(label){
+    const n = norm(label);
+    for(const key of CAT_ORDER){
+      if(CATS[key].kw.some(k=>n.includes(k))) return key;
+    }
+    return 'UNK';
+  }
+
+  function toNumberBR(tokRaw){
+    if(tokRaw==null) return null;
+    let tok = String(tokRaw).replace(/[R$\s]/g,'');
+    if(tok==='') return null;
+    const neg = /^\(.*\)$/.test(tok) || tok.startsWith('-');
+    tok = tok.replace(/[()]/g,'').replace(/^-/,'');
+    if(/,\d{1,2}$/.test(tok)) tok = tok.replace(/\./g,'').replace(',','.');
+    else tok = tok.replace(/,/g,'');
+    const v = parseFloat(tok);
+    if(isNaN(v)) return null;
+    return neg ? -v : v;
+  }
+
+  function parseLine(line){
+    line = line.replace(/\u00A0/g,' ').trim();
+    if(!line) return null;
+    const cells = line.split(/;|\t/).map(c=>c.trim()).filter(c=>c!=='');
+    if(cells.length>=2){
+      for(let i=cells.length-1;i>=1;i--){
+        const v = toNumberBR(cells[i]);
+        if(v!==null) return {label:cells[0], value:Math.abs(v)};
+      }
+    }
+    const matches = line.match(/-?\(?\s*\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})?\)?/g);
+    if(!matches || !matches.length) return null;
+    const lastTok = matches[matches.length-1];
+    const v = toNumberBR(lastTok);
+    if(v===null) return null;
+    const idx = line.lastIndexOf(lastTok);
+    const label = line.slice(0, idx).replace(/[.\-–—:\s]+$/,'').trim();
+    return {label: label || line, value: Math.abs(v)};
+  }
+
+  let dreRowsData = [];
+
+  function renderDrePreview(){
+    if(!dreRowsData.length){ $('drePreview').style.display='none'; return; }
+    $('drePreview').style.display='block';
+    const opts = CAT_ORDER.concat(['UNK']).map(k=>({k, label: k==='UNK' ? 'Não identificado' : CATS[k].label}));
+    $('dreRows').innerHTML = dreRowsData.map((r,i)=>{
+      const sel = '<select data-i="'+i+'">' + opts.map(o=>'<option value="'+o.k+'"'+(o.k===r.cat?' selected':'')+'>'+o.label+'</option>').join('') + '</select>';
+      return '<tr class="'+((r.cat==='IGNORE'||r.cat==='UNK')?'ignored':'')+'" data-row="'+i+'"><td>'+r.label+'</td><td>'+f(r.value)+'</td><td>'+sel+'</td></tr>';
+    }).join('');
+    $('dreRows').querySelectorAll('select').forEach(sel=>{
+      sel.addEventListener('change', ()=>{
+        const i = parseInt(sel.dataset.i,10);
+        dreRowsData[i].cat = sel.value;
+        sel.closest('tr').classList.toggle('ignored', sel.value==='IGNORE'||sel.value==='UNK');
+        renderDreSums();
+      });
+    });
+    renderDreSums();
+  }
+
+  function dreSumOf(cat){
+    return dreRowsData.filter(r=>r.cat===cat).reduce((s,r)=>s+r.value,0);
+  }
+
+  function renderDreSums(){
+    const div = num('prazo')>=0 ? 1 : 1; // no-op guard
+    const anual = document.querySelector('input[name="drePeriodo"]:checked').value==='anual';
+    const k = anual ? 1/12 : 1;
+    const sums = [
+      {l:'Receita', v: dreSumOf('R')*k},
+      {l:'Compras c/ crédito', v: dreSumOf('CC')*k},
+      {l:'Folha', v: dreSumOf('FP')*k},
+      {l:'Pró-labore', v: dreSumOf('PL')*k},
+      {l:'Outros custos', v: dreSumOf('CS')*k},
+    ];
+    $('dreSums').innerHTML = sums.map(s=>'<div class="ds2"><div class="l">'+s.l+'</div><div class="v">'+f(s.v)+'</div></div>').join('');
+  }
+
+  function dreStatus(msg, ok){
+    const el = $('dreStatus');
+    el.className = 'dre-status show ' + (ok?'ok':'err');
+    el.innerHTML = msg;
+  }
+
+  function processDreText(raw){
+    const lines = raw.split(/\r?\n/);
+    const rows = [];
+    for(const line of lines){
+      const p = parseLine(line);
+      if(!p || p.value===0) continue;
+      rows.push({label:p.label, value:p.value, cat: classify(p.label)});
+      if(rows.length>=250) break;
+    }
+    if(!rows.length){
+      dreStatus('⚠️ Não conseguimos identificar linhas com valores nessa DRE. Verifique o formato (uma linha por conta, com o valor ao final) ou tente colar o texto diretamente.', false);
+      dreRowsData = [];
+      $('drePreview').style.display='none';
+      return;
+    }
+    dreRowsData = rows;
+    const found = rows.filter(r=>r.cat!=='UNK' && r.cat!=='IGNORE').length;
+    dreStatus('✅ '+rows.length+' linha(s) lida(s), '+found+' classificada(s) automaticamente nas categorias do simulador. Revise a tabela abaixo antes de aplicar.', true);
+    renderDrePreview();
+  }
+
+  function readAsText(file){
+    return new Promise((resolve,reject)=>{
+      const fr = new FileReader();
+      fr.onload = ()=>resolve(fr.result);
+      fr.onerror = reject;
+      fr.readAsText(file, 'utf-8');
+    });
+  }
+  function readAsArrayBuffer(file){
+    return new Promise((resolve,reject)=>{
+      const fr = new FileReader();
+      fr.onload = ()=>resolve(fr.result);
+      fr.onerror = reject;
+      fr.readAsArrayBuffer(file);
+    });
+  }
+
+  let dreFileHandle = null;
+  $('dreDrop').addEventListener('click', ()=> $('dreFile').click());
+  $('dreDrop').addEventListener('dragover', e=>{ e.preventDefault(); $('dreDrop').classList.add('drag'); });
+  $('dreDrop').addEventListener('dragleave', ()=> $('dreDrop').classList.remove('drag'));
+  $('dreDrop').addEventListener('drop', e=>{
+    e.preventDefault(); $('dreDrop').classList.remove('drag');
+    if(e.dataTransfer.files.length){ dreFileHandle = e.dataTransfer.files[0]; $('dreFilename').textContent = '📄 '+dreFileHandle.name; }
+  });
+  $('dreFile').addEventListener('change', ()=>{
+    if($('dreFile').files.length){ dreFileHandle = $('dreFile').files[0]; $('dreFilename').textContent = '📄 '+dreFileHandle.name; }
+  });
+
+  $('dreRead').addEventListener('click', async ()=>{
+    $('dreRead').disabled = true; $('dreRead').textContent='Lendo…';
+    try{
+      let text = $('drePaste').value.trim();
+      if(dreFileHandle && !text){
+        const name = dreFileHandle.name.toLowerCase();
+        if(name.endsWith('.xlsx') || name.endsWith('.xls')){
+          if(typeof XLSX==='undefined'){
+            dreStatus('⚠️ Não foi possível carregar o leitor de planilhas (sem conexão com a internet). Exporte a DRE como .csv ou .txt, ou cole o texto no campo acima.', false);
+            return;
+          }
+          const buf = await readAsArrayBuffer(dreFileHandle);
+          const wb = XLSX.read(buf, {type:'array'});
+          const sheet = wb.Sheets[wb.SheetNames[0]];
+          text = XLSX.utils.sheet_to_csv(sheet, {FS:';'});
+        } else if(name.endsWith('.pdf')){
+          if(typeof pdfjsLib==='undefined'){
+            dreStatus('⚠️ Não foi possível carregar o leitor de PDF (sem conexão com a internet). Exporte a DRE como .csv/.txt, ou cole o texto no campo acima.', false);
+            return;
+          }
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          const buf = await readAsArrayBuffer(dreFileHandle);
+          const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+          let pages = [];
+          for(let i=1;i<=pdf.numPages;i++){
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            // Agrupa por linha, aproximando pela posição vertical (y) de cada item.
+            const lines = {};
+            content.items.forEach(it=>{
+              const y = Math.round(it.transform[5]);
+              (lines[y] = lines[y]||[]).push(it.str);
+            });
+            const ys = Object.keys(lines).map(Number).sort((a,b)=>b-a);
+            pages.push(ys.map(y=>lines[y].join(' ')).join('\n'));
+          }
+          text = pages.join('\n');
+        } else if(name.endsWith('.docx')){
+          if(typeof mammoth==='undefined'){
+            dreStatus('⚠️ Não foi possível carregar o leitor de Word (sem conexão com a internet). Exporte a DRE como .csv/.txt/.pdf, ou cole o texto no campo acima.', false);
+            return;
+          }
+          const buf = await readAsArrayBuffer(dreFileHandle);
+          const res = await mammoth.extractRawText({arrayBuffer:buf});
+          text = res.value;
+        } else if(name.endsWith('.doc')){
+          dreStatus('⚠️ O formato .doc antigo não é suportado. Salve o arquivo como .docx, .pdf ou .csv e tente novamente.', false);
+          return;
+        } else {
+          text = await readAsText(dreFileHandle);
+        }
+      }
+      if(!text){
+        dreStatus('⚠️ Anexe um arquivo ou cole o texto da DRE antes de ler.', false);
+        return;
+      }
+      processDreText(text);
+    } catch(err){
+      dreStatus('⚠️ Não foi possível ler esse arquivo. Tente exportar como .csv/.txt/.pdf ou cole o texto diretamente.', false);
+    } finally {
+      $('dreRead').disabled = false; $('dreRead').textContent='🔎 Ler DRE';
+    }
+  });
+
+  document.querySelectorAll('input[name="drePeriodo"]').forEach(r=>r.addEventListener('change', renderDreSums));
+
+  $('dreClear').addEventListener('click', ()=>{
+    dreRowsData = []; dreFileHandle = null;
+    $('dreFile').value=''; $('drePaste').value=''; $('dreFilename').textContent='';
+    $('drePreview').style.display='none';
+    $('dreStatus').className='dre-status';
+  });
+
+  $('dreApply').addEventListener('click', ()=>{
+    const anual = document.querySelector('input[name="drePeriodo"]:checked').value==='anual';
+    const k = anual ? 1/12 : 1;
+    $('R').value  = Math.round(dreSumOf('R')*k);
+    $('Cc').value = Math.round(dreSumOf('CC')*k);
+    $('Fp').value = Math.round(dreSumOf('FP')*k);
+    $('PL').value = Math.round(dreSumOf('PL')*k);
+    $('Cs').value = Math.round(dreSumOf('CS')*k);
+    $('dreAppliedNote').style.display='block';
+    document.querySelector('.tabbtn[data-tab="manual"]').click();
+    dataSource = 'dre';
+    compute();
+    openDashboard();
+  });
+
+  $('ctaResult').addEventListener('click', ()=>{
+    compute();
+    openDashboard();
+  });
+  $('dashPrint').addEventListener('click', ()=> window.print());
+
+  /* ---------- DASHBOARD: outra interface para o resultado da DRE ---------- */
+  function donutSVG(segments){
+    const r=74, cx=100, cy=100, sw=26;
+    const circumference = 2*Math.PI*r;
+    const total = segments.reduce((s,x)=>s+Math.max(0,x.value),0) || 1;
+    let offset=0, svg='';
+    segments.forEach(seg=>{
+      const val=Math.max(0,seg.value);
+      const frac = val/total;
+      const len = frac*circumference;
+      svg += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+seg.color+'" stroke-width="'+sw+
+        '" stroke-dasharray="'+len+' '+(circumference-len)+'" stroke-dashoffset="'+(-offset)+
+        '" transform="rotate(-90 '+cx+' '+cy+')"/>';
+      offset += len;
+    });
+    svg += '<circle cx="'+cx+'" cy="'+cy+'" r="'+(r-sw/2-5)+'" fill="#1C1C20"/>';
+    svg += '<text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="800">Receita</text>';
+    svg += '<text x="'+cx+'" y="'+(cy+15)+'" text-anchor="middle" fill="#A9ACB3" font-size="10.5">100%</text>';
+    return svg;
+  }
+
+  function openDashboard(){
+    if(!lastCompute){ compute(); }
+    const {e, rows, best, hojeTot, refSame, dSame} = lastCompute;
+    const R = e.R || 1;
+    const regimeName = REGS.find(r=>r.id===regime).n;
+    const llRef = e.R-e.Cc-e.Fp-e.PL-e.Cs-refSame;
+    const llBest = e.R-e.Cc-e.Fp-e.PL-e.Cs-best.o.tot;
+
+    const origem = dataSource==='dre' ? 'dados importados da DRE' : 'dados informados manualmente';
+    $('dashKick').textContent = 'Dashboard · resultado da sua carga tributária';
+    $('dashSub').textContent = act.n+' · regime atual: '+regimeName+' · '+origem;
+
+    // KPIs
+    const dColor = dSame>0 ? '#C1524A' : '#34A57C';
+    $('dashKpis').innerHTML =
+      '<div class="dcard tilt"><div class="dl">Faturamento</div><div class="dv">'+f(e.R)+'</div><div class="ds3">receita mensal</div></div>'+
+      '<div class="dcard tilt"><div class="dl">Carga hoje</div><div class="dv">'+f(hojeTot)+'</div><div class="ds3">'+pc(hojeTot/R*100)+' da receita</div></div>'+
+      '<div class="dcard tilt"><div class="dl">Carga na reforma</div><div class="dv" style="color:'+dColor+'">'+f(refSame)+'</div><div class="ds3">'+(dSame>0?'+':'')+f(dSame)+'/mês vs. hoje</div></div>'+
+      '<div class="dcard tilt"><div class="dl">Lucro líquido (melhor regime)</div><div class="dv" style="color:#34A57C">'+f(llBest)+'</div><div class="ds3">com '+best.n+'</div></div>';
+
+    // Donut: composição da DRE
+    const segs = [
+      {label:'Compras c/ crédito', value:e.Cc, color:'var(--violet)'},
+      {label:'Folha', value:e.Fp, color:'var(--amber)'},
+      {label:'Pró-labore', value:e.PL, color:'var(--coral)'},
+      {label:'Outros custos', value:e.Cs, color:'var(--teal)'},
+      {label:'Carga tributária (reforma)', value:refSame, color:'var(--cyan)'},
+      {label:'Lucro líquido', value:Math.max(0,llRef), color:'var(--green)'},
+    ];
+    $('dashDonut').innerHTML = donutSVG(segs);
+    $('dashLegend').innerHTML = segs.map(s=>
+      '<div class="li"><span class="sw" style="background:'+s.color+'"></span>'+s.label+'<span class="lv">'+pc(Math.max(0,s.value)/R*100)+'</span></div>'
+    ).join('');
+
+    // Barras: carga por regime na reforma
+    const maxTot = Math.max.apply(null, rows.map(r=>r.o.tot));
+    const barColors = {simples:'var(--violet)', hibrido:'var(--amber)', presumido:'var(--teal)', real:'var(--cyan)'};
+    $('dashBars').innerHTML = rows.map(r=>{
+      const w = Math.max(8, r.o.tot/maxTot*100);
+      const isBest = r.id===best.id;
+      const col = isBest ? 'var(--green)' : barColors[r.id];
+      return '<div class="drow"><div class="dn"><span>'+r.n+(isBest?' ✓ menor carga':'')+'</span><b>'+f(r.o.tot)+'</b></div>'+
+        '<div class="dt"><div class="df" style="width:'+w+'%;background:'+col+'">'+pc(r.o.tot/R*100)+'</div></div></div>';
+    }).join('');
+
+    // Barras: hoje x reforma
+    const maxHR = Math.max(hojeTot, refSame);
+    $('dashCompare').innerHTML =
+      '<div class="drow"><div class="dn"><span>Hoje ('+regimeName+')</span><b>'+f(hojeTot)+'</b></div>'+
+      '<div class="dt"><div class="df" style="width:'+Math.max(8,hojeTot/maxHR*100)+'%;background:var(--amber)">'+pc(hojeTot/R*100)+'</div></div></div>'+
+      '<div class="drow"><div class="dn"><span>Reforma, mesmo regime</span><b>'+f(refSame)+'</b></div>'+
+      '<div class="dt"><div class="df" style="width:'+Math.max(8,refSame/maxHR*100)+'%;background:'+dColor+'">'+pc(refSame/R*100)+'</div></div></div>';
+
+    $('dashNote').innerHTML = dSame>0
+      ? 'Com os '+origem+', mantido o regime atual ('+regimeName+'), a carga tributária tende a subir '+f(dSame)+' por mês na reforma. Avalie o regime de menor carga ('+best.n+') na aba de resultado detalhado.'
+      : 'Com os '+origem+', mantido o regime atual ('+regimeName+'), a carga tributária tende a cair '+f(Math.abs(dSame))+' por mês na reforma.';
+
+    $('dashOverlay').classList.add('on');
+    document.body.style.overflow='hidden';
+  }
+
+  function closeDashboard(){
+    $('dashOverlay').classList.remove('on');
+    document.body.style.overflow='';
+  }
+  $('dashClose').addEventListener('click', closeDashboard);
+  $('dashOverlay').addEventListener('keydown', e=>{ if(e.key==='Escape') closeDashboard(); });
+
+  /* ---------- EFEITO 3D AO PASSAR O CURSOR ---------- */
+  // Delegado no document: funciona mesmo com elementos recriados a cada render.
+  const TILT_MAX = 9;       // graus de rotação máxima
+  let tiltCurrent = null;
+
+  function resetTilt(el){
+    el.style.transform = '';
+  }
+
+  function applyTilt(el, clientX, clientY){
+    const r = el.getBoundingClientRect();
+    if(r.width===0 || r.height===0) return;
+    const px = (clientX - r.left) / r.width;   // 0..1
+    const py = (clientY - r.top) / r.height;   // 0..1
+    const rotY = (px - 0.5) * TILT_MAX * 2;
+    const rotX = (0.5 - py) * TILT_MAX * 2;
+    el.style.transform = 'perspective(900px) rotateX('+rotX.toFixed(2)+'deg) rotateY('+rotY.toFixed(2)+'deg) translateZ(4px)';
+    el.style.setProperty('--mx', (px*100).toFixed(1)+'%');
+    el.style.setProperty('--my', (py*100).toFixed(1)+'%');
+  }
+
+  document.addEventListener('pointermove', e=>{
+    if(e.pointerType==='touch') return;
+    const el = e.target.closest('.tilt');
+    if(el !== tiltCurrent){
+      if(tiltCurrent) resetTilt(tiltCurrent);
+      tiltCurrent = el;
+    }
+    if(el) applyTilt(el, e.clientX, e.clientY);
+  }, {passive:true});
+
+  document.documentElement.addEventListener('mouseleave', ()=>{
+    if(tiltCurrent){ resetTilt(tiltCurrent); tiltCurrent=null; }
+  });
+
+  // Ao rolar, o alvo pode sumir da tela sem disparar mouseleave.
+  window.addEventListener('scroll', ()=>{ if(tiltCurrent){ resetTilt(tiltCurrent); tiltCurrent=null; } }, {passive:true, capture:true});
+})();
+</script>
+</body>
+</html>
